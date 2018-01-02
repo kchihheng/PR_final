@@ -3,7 +3,6 @@ import cv2
 import argparse
 import _pickle as pickle
 import numpy as np
-from sklearn import svm
 from cyvlfeat.hog import hog
 from config import FER2013, CKPLUS
 from data_loader import landmark_feats
@@ -14,11 +13,14 @@ args = parser.parse_args()
 
 if args.dataset == FER2013.name:
     model_name = 'fer2013_model.bin'
-    emotions = ['Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral']
+    emotions = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 elif args.dataset == CKPLUS.name:
     model_name = 'ckplus_model.bin'
+    emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]
 else:
     model_name = 'saved_model.bin'
+    emotions = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+
 
 with open(model_name, 'rb') as f:
     clf = pickle.load(f)
@@ -48,18 +50,21 @@ while(True):
         w = d.right() - d.left()
         h = d.bottom() - d.top()
         crop = image[d.top():d.top() + h, d.left():d.left() + w]
-        frame = cv2.rectangle(frame, (d.top(), d.left()), (d.bottm(), d.right()), (0, 0, 255), 3)
+        frame = cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 0, 255), 2)
         crop = cv2.resize(crop, (face_width, face_height), interpolation=cv2.INTER_LINEAR)
         hog_image = hog(crop, cell)
-        landmarks_vectorised = landmark_feats(crop, d, predictor, args.name)
+        landmarks_vectorised = landmark_feats(crop, d, predictor, args.dataset)
         hog_feats = np.reshape(hog_image, [1, hog_d])
         feats = np.concatenate([landmarks_vectorised, hog])
         conf = clf.predict_proba(feats)
         label = np.argmax(conf[0, :])
-        cv2.putText()
+        idx = np.argmax(conf[0, :])
+        cv2.putText(frame, emotions[idx], (d.left(), d.top()), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 3,
+                    cv2.LINE_AA)
 
-        cv2.imshow('webcam', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    cv2.imshow('webcam', frame)
+    key = cv2.waitKey(10)
+    if key in [27, ord('Q'), ord('q')]:  # exit on ESC
+        break
 cap.release()
 cv2.destroyAllWindows()
