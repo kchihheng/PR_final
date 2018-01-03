@@ -11,13 +11,7 @@ from config import FER2013, CKPLUS
 from cyvlfeat.hog import hog
 #import pdb
 
-def landmark_feats(image, d, predictor, dataset):
-    if dataset == 'fer2013':
-        image_height = FER2013.height
-        image_width = FER2013.width
-    elif dataset == 'ckplus':
-        image_height = CKPLUS.height
-        image_width = CKPLUS.width
+def landmark_feats(image, d, predictor, image_width, image_height):
     # box clipped
     if d.right() >= image_width:
         right = image_width - 1
@@ -41,12 +35,13 @@ def landmark_feats(image, d, predictor, dataset):
     # scale factor for the face
     xscale = (rect.right() - rect.left() + 1) / image_width
     yscale = (rect.bottom() - rect.top() + 1) / image_height
+
     # get normalized landmarks coordinates
     xlist = []
     ylist = []
     for ind in range(0, 68):
-        xlist.append(float(shape.part(ind).x) / xscale)
-        ylist.append(float(shape.part(ind).y) / yscale)
+        xlist.append(float(shape.part(ind).x)/ xscale)
+        ylist.append(float(shape.part(ind).y)/ yscale)
     # find the static point on the face
     xc = xlist[39] + (xlist[42] - xlist[39]) / 2
     yc = ylist[39] + (ylist[42] - ylist[39]) / 2
@@ -82,8 +77,6 @@ def get_data_fer2013(clahe, detector, predictor, selected_label, save_images):
     image_height = FER2013.height
     image_width = FER2013.width
     cell = FER2013.cell
-    ori_labels = [0, 1, 2, 3, 4, 5, 6]
-    #new_labels = list(set(ori_labels) & set(selected_label))
 
     print("importing csv file")
     data = pd.read_csv(OUTPUT_FOLDER_NAME+'/fer2013.csv')
@@ -130,7 +123,7 @@ def get_data_fer2013(clahe, detector, predictor, selected_label, save_images):
                 hog_image = hog(image, cell)
                 #for all detected face
                 for k, d in enumerate(detections):
-                    landmarks_vectorised = landmark_feats(image, d, predictor, FER2013.name)
+                    landmarks_vectorised = landmark_feats(image, d, predictor, FER2013.width, FER2013.height)
                     # concat feature
                     feats_data = np.concatenate([feats_data, landmarks_vectorised], axis=0)
                     hog_feats = np.concatenate([hog_feats, np.reshape(hog_image, [1, hog_d])],axis=0)
@@ -148,8 +141,6 @@ def get_data_ckplus(clahe, detector, predictor, selected_label, save_images):
     face_height = CKPLUS.face_height
     face_width = CKPLUS.face_width
     cell = CKPLUS.cell
-    ori_labels = [0, 1, 2, 3, 4, 5, 6, 7]
-    #new_labels = list(set(ori_labels) & set(selected_label))
 
     # initialize
     feats_data = np.zeros([0, 274])
@@ -170,9 +161,27 @@ def get_data_ckplus(clahe, detector, predictor, selected_label, save_images):
             im_name = im_name[0]+'_'+im_name[1]+'_'+im_name[2]
             with open(txt[0],'r') as f:
                 label = f.read()
+                print(label)
                 label = label.split('.')
                 label = label[0].split(' ')
                 label = int(label[-1])
+            if label not in selected_label:
+                continue
+            # label transform to match fer2013
+            if label == 0: #neutral
+                label = 6
+            elif label == 1: #anger
+                label = 0
+            elif label == 3: # disgust
+                label = 1
+            elif label == 4: #fear
+                label = 2
+            elif label == 5: #happy
+                label = 3
+            elif label == 6: #sad
+                label = 4
+            elif label == 7: #surprise
+                label = 5
             image = cv2.imread(name[0]+'/image/'+ name[2] + '/' + name[3] + '/' + im_name + '.png')
             if image.shape[0:1] != (CKPLUS.height, CKPLUS.width):
                 image = cv2.resize(image, (CKPLUS.width, CKPLUS.height))
@@ -186,6 +195,24 @@ def get_data_ckplus(clahe, detector, predictor, selected_label, save_images):
                 continue
             # for all detected face
             for k, d in enumerate(detections):
+                # box clipped
+                if d.right() >= CKPLUS.width:
+                    right = CKPLUS.width - 1
+                else:
+                    right = d.right()
+                if d.bottom() >= CKPLUS.height:
+                    bottom = CKPLUS.height - 1
+                else:
+                    bottom = d.bottom()
+                if d.top() < 0:
+                    top = 0
+                else:
+                    top = d.top()
+                if d.left() < 0:
+                    left = 0
+                else:
+                    left = d.left()
+                d = dlib.rectangle(left, top, right, bottom)
                 w = d.right() - d.left()
                 h = d.bottom() - d.top()
                 crop = image[d.top():d.top()+h, d.left():d.left()+w]
@@ -194,7 +221,7 @@ def get_data_ckplus(clahe, detector, predictor, selected_label, save_images):
                     cv2.imwrite(OUTPUT_FOLDER_NAME + '/face_image/' + im_name + '.png', crop)
                 # extract HOG features
                 hog_image = hog(crop, cell)
-                landmarks_vectorised = landmark_feats(crop, d, predictor, CKPLUS.name)
+                landmarks_vectorised = landmark_feats(image, d, predictor, CKPLUS.width, CKPLUS.height)
                 # concat feature
                 feats_data = np.concatenate([feats_data, landmarks_vectorised], axis=0)
                 hog_feats = np.concatenate([hog_feats, np.reshape(hog_image, [1, hog_d])], axis=0)

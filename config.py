@@ -5,6 +5,8 @@ class fer2013:
     test_folder = 'fer2013_features/PrivateTest'
     width = 48
     height = 48
+    face_width = 48
+    face_height = 48
     cell = 3
 
 class ckplus:
@@ -16,7 +18,7 @@ class ckplus:
     face_width = 48
     face_height = 48
     cell = 3
-    ratio = [0.8,0.1,0.1]
+    ratio =0.8
 
 FER2013 = fer2013()
 CKPLUS = ckplus()
