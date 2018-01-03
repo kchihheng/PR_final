@@ -218,6 +218,8 @@ def get_data_ckplus(clahe, detector, predictor, selected_label, save_images):
                 crop = image[d.top():d.top()+h, d.left():d.left()+w]
                 crop = cv2.resize(crop, (face_width, face_height), interpolation=cv2.INTER_LINEAR)
                 if save_images:
+                    if not os.path.exists(OUTPUT_FOLDER_NAME + '/face_image'):
+                        os.makedirs(OUTPUT_FOLDER_NAME + '/face_image')
                     cv2.imwrite(OUTPUT_FOLDER_NAME + '/face_image/' + im_name + '.png', crop)
                 # extract HOG features
                 hog_image = hog(crop, cell)

@@ -13,7 +13,8 @@ parser.add_argument("-d", "--dataset", default="fer2013", help="dataset")
 args = parser.parse_args()
 
 emotions = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
-THRESH = 0.6
+THRESH1 = 0.7
+THRESH2 = 0.4
 
 if args.dataset == FER2013.name:
     model_name = 'fer2013_model.bin'
@@ -76,20 +77,27 @@ while(True):
         h = d.bottom() - d.top()
         crop = image[d.top():d.top() + h, d.left():d.left() + w]
         frame = cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 0, 255), 2)
-        crop = cv2.resize(crop, (face_width, face_height), interpolation=cv2.INTER_LINEAR)
+        crop = cv2.resize(crop, (face_width, face_height), interpolation=cv2.INTER_CUBIC)
         hog_image = hog(crop, cell)
         landmarks_vectorised = landmark_feats(image, d, predictor, frame.shape[1],frame.shape[0])
         hog_feats = np.reshape(hog_image, [1, hog_d])
         feats = np.concatenate([landmarks_vectorised, hog_feats], axis=1)
         conf = clf.predict_proba(feats)
-        conf = conf[0, :]
-        idx = np.argmax(conf)
-        if conf[idx] >= THRESH:
+        tmp_conf = conf[0, :].copy()
+        idx = np.argmax(tmp_conf)
+        if conf[0,idx] >= THRESH1:
             text = emotions[idx]
         else:
             text = emotions[-1]
+        tmp_conf[idx] = -1
         cv2.putText(frame, text, (d.left(), d.top()), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
                     cv2.LINE_AA)
+        idx = np.argmax(tmp_conf)
+        if conf[0,idx] >= THRESH2:
+            text = emotions[idx]
+            cv2.putText(frame, text, (d.left(), d.top()-25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
+                        cv2.LINE_AA)
+
 
     cv2.imshow('webcam', frame)
     key = cv2.waitKey(1)

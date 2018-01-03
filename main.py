@@ -17,7 +17,7 @@ image_height = 48
 image_width = 48
 OUTPUT_FOLDER_NAME = "fer2013"
 SAVE_IMAGES = False
-model_name="ckplus_model.bin"
+model_name="saved_model.bin"
 emotions = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
 
