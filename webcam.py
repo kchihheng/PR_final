@@ -9,20 +9,24 @@ from data_loader import landmark_feats
 import pdb
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--dataset", default="fer2013", help="dataset")
+parser.add_argument("-d", "--dataset", default="ckplus", help="dataset")
 args = parser.parse_args()
 
 emotions = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
-THRESH1 = 0.7
-THRESH2 = 0.4
+THRESH1 = 0.4
+#THRESH2 = 0.9
 
 if args.dataset == FER2013.name:
     model_name = 'fer2013_model.bin'
+    width = FER2013.width
+    height = FER2013.height
     face_width = FER2013.face_width
     face_height = FER2013.face_height
     cell = FER2013.cell
 elif args.dataset == CKPLUS.name:
     model_name = 'ckplus_model.bin'
+    width = CKPLUS.width
+    height = CKPLUS.height
     face_width = CKPLUS.face_width
     face_height = CKPLUS.face_height
     cell = CKPLUS.cell
@@ -79,7 +83,7 @@ while(True):
         frame = cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 0, 255), 2)
         crop = cv2.resize(crop, (face_width, face_height), interpolation=cv2.INTER_CUBIC)
         hog_image = hog(crop, cell)
-        landmarks_vectorised = landmark_feats(image, d, predictor, frame.shape[1],frame.shape[0])
+        landmarks_vectorised = landmark_feats(crop, dlib.rectangle(0, 0, face_width-1, face_height-1), predictor, width, height)
         hog_feats = np.reshape(hog_image, [1, hog_d])
         feats = np.concatenate([landmarks_vectorised, hog_feats], axis=1)
         conf = clf.predict_proba(feats)
@@ -89,14 +93,14 @@ while(True):
             text = emotions[idx]
         else:
             text = emotions[-1]
-        tmp_conf[idx] = -1
+        #tmp_conf[idx] = -1
         cv2.putText(frame, text, (d.left(), d.top()), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
                     cv2.LINE_AA)
-        idx = np.argmax(tmp_conf)
-        if conf[0,idx] >= THRESH2:
-            text = emotions[idx]
-            cv2.putText(frame, text, (d.left(), d.top()-25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
-                        cv2.LINE_AA)
+        #idx = np.argmax(tmp_conf)
+        #if conf[0,idx] >= THRESH2:
+            #text = emotions[idx]
+            #cv2.putText(frame, text, (d.left(), d.top()-25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
+            #            cv2.LINE_AA)
 
 
     cv2.imshow('webcam', frame)
