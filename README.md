@@ -11,7 +11,7 @@ This project is related to facial emotion recognition with face keypoint detecti
 ## Dataset
 * [fer2013](https://www.kaggle.com/c/challenges-in-representation-learning-facial-expression-recognition-challenge/data):
    7 emotions and 28709 examples
-* [CK+](http://www.consortium.ri.cmu.edu/ckagree/): 8 emotions(I use 7 emotions ignored contempt) and 309 labeled images
+* [CK+](http://www.consortium.ri.cmu.edu/ckagree/): 7 emotions + neutral(I use 6 emotions ignored contempt) and 309 labeled images
 
 ## Training and Testing
   * add <code>-t yes</code> means training
